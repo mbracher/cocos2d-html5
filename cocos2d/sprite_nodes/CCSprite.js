@@ -548,7 +548,12 @@ cc.Sprite = cc.Node.extend(/** @lends cc.Sprite# */{
     initWithFile:function (filename, rect) {
         cc.Assert(filename != null, "Sprite#initWithFile():Invalid filename for sprite");
         var selfPointer = this;
-
+        var errorCallback = null;
+        
+        if(typeof rect === 'function') {
+            errorCallback = rect;
+            rect = null;
+        }
         var texture = cc.TextureCache.getInstance().textureForKey(filename);
         if (!texture) {
             //texture = cc.TextureCache.getInstance().addImage(filename);
@@ -562,8 +567,12 @@ cc.Sprite = cc.Node.extend(/** @lends cc.Sprite# */{
                 cc.TextureCache.getInstance().cacheImage(filename, loadImg);
                 selfPointer._visible = true;
             });
+
             loadImg.addEventListener("error", function () {
                 cc.log("load failure:" + filename);
+                if(errorCallback) {
+                    errorCallback(selfPointer);
+                }
             });
             loadImg.src = filename;
             return true;
@@ -1723,16 +1732,18 @@ cc.Sprite.createWithTexture = function (texture, rect, offset) {
 cc.Sprite.create = function (fileName, rect) {
     var argnum = arguments.length;
     var sprite = new cc.Sprite();
+    
     if (argnum === 0) {
         if (sprite.init())
             return sprite;
         return null;
-    } else if (argnum < 2) {
+    } else if (argnum < 2 || (argnum == 2 && typeof rect === 'function')) {
+
         /** Creates an sprite with an image filename.
          The rect used will be the size of the image.
          The offset will be (0,0).
          */
-        if (sprite && sprite.initWithFile(fileName)) {
+        if (sprite && sprite.initWithFile(fileName, rect)) {
             return sprite;
         }
         return null;
